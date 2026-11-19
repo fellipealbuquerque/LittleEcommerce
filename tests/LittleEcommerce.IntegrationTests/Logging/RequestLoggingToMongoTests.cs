@@ -7,29 +7,27 @@ using MongoDB.Driver;
 
 namespace LittleEcommerce.IntegrationTests.Logging;
 
-[Collection(MongoCollection.Name)]
+[Collection(IntegrationCollection.Name)]
 public sealed class RequestLoggingToMongoTests : IDisposable
 {
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(20);
 
-    private readonly ApiFactory _root = new();
     private readonly WebApplicationFactory<Program> _factory;
     private readonly IMongoCollection<BsonDocument> _logs;
 
-    public RequestLoggingToMongoTests(MongoContainerFixture mongo)
+    public RequestLoggingToMongoTests(IntegrationFixture fixture)
     {
         var databaseName = $"test_{Guid.NewGuid():N}";
 
-        _factory = _root.WithWebHostBuilder(b => b
-            .UseSetting("ConnectionStrings:Mongo", mongo.ConnectionString)
+        _factory = fixture.Factory.WithWebHostBuilder(b => b
             .UseSetting("Mongo:Database", databaseName)
             .UseSetting("MongoLogging:Enabled", "true")
             .UseSetting("MongoLogging:FlushIntervalSeconds", "1"));
 
-        _logs = new MongoClient(mongo.ConnectionString).GetDatabase(databaseName).GetCollection<BsonDocument>("logs");
+        _logs = new MongoClient(fixture.MongoConnectionString).GetDatabase(databaseName).GetCollection<BsonDocument>("logs");
     }
 
-    public void Dispose() => _root.Dispose();
+    public void Dispose() => _factory.Dispose();
 
     private async Task<string> SendAsync(string path)
     {

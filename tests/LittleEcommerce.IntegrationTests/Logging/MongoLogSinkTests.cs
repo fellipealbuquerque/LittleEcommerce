@@ -8,8 +8,8 @@ using Serilog.Parsing;
 
 namespace LittleEcommerce.IntegrationTests.Logging;
 
-[Collection(MongoCollection.Name)]
-public class MongoLogSinkTests(MongoContainerFixture mongo)
+[Collection(IntegrationCollection.Name)]
+public class MongoLogSinkTests(IntegrationFixture fixture)
 {
     private static readonly MessageTemplateParser Parser = new();
 
@@ -25,7 +25,7 @@ public class MongoLogSinkTests(MongoContainerFixture mongo)
     [Fact]
     public async Task EmitBatchAsync_ShouldInsertDocumentsAndCreateIndexes()
     {
-        var database = mongo.NewDatabase();
+        var database = fixture.NewMongoDatabase();
         var sink = new MongoLogSink(database, new MongoLoggingOptions { Collection = "logs", RetentionDays = 7 });
 
         await sink.EmitBatchAsync([Event("primeiro"), Event("segundo")]);
@@ -42,7 +42,7 @@ public class MongoLogSinkTests(MongoContainerFixture mongo)
     [Fact]
     public async Task EmitBatchAsync_ShouldUpdateTtl_WhenRetentionChanges()
     {
-        var database = mongo.NewDatabase();
+        var database = fixture.NewMongoDatabase();
         await new MongoLogSink(database, new MongoLoggingOptions { RetentionDays = 7 }).EmitBatchAsync([Event("antes")]);
 
         await new MongoLogSink(database, new MongoLoggingOptions { RetentionDays = 14 }).EmitBatchAsync([Event("depois")]);
