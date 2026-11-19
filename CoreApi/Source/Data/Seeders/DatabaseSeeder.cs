@@ -14,9 +14,18 @@ public class DatabaseSeeder(
     IUserRepository users,
     IUnitOfWork unitOfWork,
     IPasswordHasher hasher,
+    DemoCatalogSeeder demoCatalog,
     ILogger<DatabaseSeeder> logger) : IDatabaseSeeder
 {
     public async Task SeedAsync(CancellationToken ct = default)
+    {
+        await SeedAdminAsync(ct);
+
+        if (options.Value.DemoCatalog)
+            await demoCatalog.SeedAsync(ct);
+    }
+
+    private async Task SeedAdminAsync(CancellationToken ct)
     {
         var seed = options.Value;
 

@@ -23,4 +23,8 @@ public static class ErrorCodes
     public const string CannotChangeOwnAccount = "CANNOT_CHANGE_OWN_ACCOUNT";
     public const string LastAdmin = "LAST_ADMIN";
     public const string OutboxMessageProcessing = "OUTBOX_MESSAGE_PROCESSING";
+    public const string SkuAlreadyExists = "SKU_ALREADY_EXISTS";
+    public const string SlugAlreadyExists = "SLUG_ALREADY_EXISTS";
+    public const string CategoryInUse = "CATEGORY_IN_USE";
+    public const string LinkAlreadyExists = "LINK_ALREADY_EXISTS";
 }
