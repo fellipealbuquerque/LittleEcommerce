@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [release, staging, main]
+  push:
+    branches: [release, staging, main]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore LittleEcommerce.slnx
+
+      - name: Build
+        run: dotnet build LittleEcommerce.slnx --no-restore -c Release
+
+      - name: Test
+        run: dotnet test LittleEcommerce.slnx --no-build -c Release
