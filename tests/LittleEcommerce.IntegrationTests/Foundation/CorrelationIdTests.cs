@@ -1,12 +1,14 @@
 using System.Net;
 using System.Text.Json;
+using LittleEcommerce.IntegrationTests.Infrastructure;
 using LittleEcommerce.Source.Middlewares;
 
 namespace LittleEcommerce.IntegrationTests.Foundation;
 
-public class CorrelationIdTests(ApiFactory factory) : IClassFixture<ApiFactory>
+[Collection(IntegrationCollection.Name)]
+public class CorrelationIdTests(IntegrationFixture fixture)
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = fixture.Factory.CreateClient();
 
     private static string HeaderOf(HttpResponseMessage response) =>
         response.Headers.GetValues(CorrelationIdMiddleware.HeaderName).Single();
