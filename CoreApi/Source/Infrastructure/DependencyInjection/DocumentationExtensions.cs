@@ -1,3 +1,4 @@
+using LittleEcommerce.Source.Infrastructure.Authorization;
 using LittleEcommerce.Source.Shared.Helpers;
 using LittleEcommerce.Source.Shared.Options;
 using Microsoft.AspNetCore.Authorization;
@@ -63,6 +64,20 @@ public static class DocumentationExtensions
                 operation.Responses.TryAdd(
                     StatusCodes.Status401Unauthorized.ToString(),
                     new OpenApiResponse { Description = "Token ausente, inválido, expirado ou revogado" });
+
+                var permissions = metadata.OfType<RequiresPermissionAttribute>().Select(p => $"`{p.Permission}`").Distinct().ToList();
+
+                if (permissions.Count == 0)
+                    return Task.CompletedTask;
+
+                var requirement = $"Permissão necessária: {string.Join(", ", permissions)}.";
+                operation.Description = string.IsNullOrWhiteSpace(operation.Description)
+                    ? requirement
+                    : $"{operation.Description}\n\n{requirement}";
+
+                operation.Responses.TryAdd(
+                    StatusCodes.Status403Forbidden.ToString(),
+                    new OpenApiResponse { Description = "O papel do usuário não tem a permissão necessária" });
 
                 return Task.CompletedTask;
             });
