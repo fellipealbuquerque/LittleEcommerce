@@ -12,6 +12,7 @@ builder.Services
     .AddAuditing(builder.Configuration)
     .AddPersistence(builder.Configuration)
     .AddAuth(builder.Configuration)
+    .AddMessaging(builder.Configuration)
     .AddHealth();
 
 var app = builder.Build();

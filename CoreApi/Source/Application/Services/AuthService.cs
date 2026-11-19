@@ -1,6 +1,7 @@
 using LittleEcommerce.Source.Application.Abstractions;
 using LittleEcommerce.Source.Application.Exceptions;
 using LittleEcommerce.Source.Application.Interfaces;
+using LittleEcommerce.Source.Application.Interfaces.Messaging;
 using LittleEcommerce.Source.Application.Interfaces.Security;
 using LittleEcommerce.Source.Application.Interfaces.Services;
 using LittleEcommerce.Source.Application.Mappers;
@@ -23,6 +24,8 @@ public class AuthService(
     IPasswordHasher hasher,
     ITokenService tokens,
     ITokenRevocationStore revocation,
+    IOutbox outbox,
+    IOutboxSignal outboxSignal,
     TimeProvider clock,
     ILogger<AuthService> logger) : IAuthService
 {
@@ -56,10 +59,18 @@ public class AuthService(
 
             users.Add(user);
 
+            outbox.Enqueue(
+                OutboxMessageTypes.WelcomeEmail,
+                new WelcomeEmailPayload(user.Id, user.Email, user.Name),
+                OutboxAggregates.User,
+                user.Id.ToString());
+
             return Issue(user, Guid.CreateVersion7(), client);
         }, ct);
 
-        logger.LogInformation("Usuário {UserId} cadastrado", result.User.Id);
+        outboxSignal.Notify();
+
+        logger.LogInformation("Usuário {UserId} cadastrado; e-mail de boas-vindas na fila", result.User.Id);
 
         return result;
     }
