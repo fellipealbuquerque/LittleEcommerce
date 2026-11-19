@@ -105,11 +105,13 @@ Cada papel tem um conjunto de permissões (`permissions` e `role_permissions`). 
 | `audit.read` | consultar a auditoria |
 | `outbox.read` | consultar mensagens do outbox |
 | `outbox.manage` | reenviar mensagens e o e-mail de boas-vindas |
+| `catalog.read` | ver produtos e categorias, inclusive inativos |
+| `catalog.manage` | criar e editar produtos, categorias, estoque e vínculos |
 
 | Papel | Permissões |
 |---|---|
 | `Admin` | todas, sempre; não pode ser editado |
-| `Manager` | `users.read` (as próximas etapas acrescentam catálogo, pedidos e relatórios) |
+| `Manager` | `users.read`, `catalog.read`, `catalog.manage` (as próximas etapas acrescentam pedidos e relatórios) |
 | `Customer` | nenhuma rota admin |
 
 Regras de proteção: papéis do sistema não podem ser removidos, papel com usuários não pode ser removido, ninguém troca o próprio papel nem se bloqueia, e o último administrador ativo não pode ser rebaixado nem bloqueado. Trocar papel ou bloquear derruba as sessões do usuário.
@@ -126,6 +128,42 @@ Regras de proteção: papéis do sistema não podem ser removidos, papel com usu
 | `GET /api/v1/admin/audit-logs` | `audit.read` |
 
 No Swagger, a descrição de cada rota admin mostra a permissão necessária.
+
+## Catálogo
+
+| Rota pública | O que faz |
+|---|---|
+| `GET /api/v1/products` | lista paginada: `search` (nome, SKU ou descrição), `category` (id ou slug), `minPrice`, `maxPrice`, `inStock`, `sort` (`Newest`, `NameAsc`, `PriceAsc`, `PriceDesc`), `limit`, `offset` |
+| `GET /api/v1/products/{idOuSlug}` | detalhe com descrição, desconto calculado do preço "de" e estoque |
+| `GET /api/v1/products/{idOuSlug}/links` | produtos vinculados (`type` opcional) |
+| `GET /api/v1/categories` | categorias ativas com a quantidade de produtos ativos |
+
+O catálogo público só mostra produtos ativos de categorias ativas. A busca usa `ILIKE` com índice trigram (`pg_trgm`) no nome; `%` e `_` digitados pelo usuário são tratados como texto.
+
+**Vínculos entre produtos**
+
+| Tipo | Sentido | Uso |
+|---|---|---|
+| `Related` | nos dois sentidos | "veja também" |
+| `Substitute` | nos dois sentidos | alternativa quando um está esgotado |
+| `Accessory` | só do produto para o acessório | "compre junto" |
+| `Kit` | só do kit para o componente, com `quantity` | composição do kit (informativa; o estoque do kit é o do próprio produto) |
+
+**Cache**: listagem, detalhe, vínculos e categorias ficam no Redis por `CatalogCache:TtlSeconds` (5 min). Toda escrita no catálogo incrementa `catalog:version`, então a próxima leitura já vem do banco; as chaves antigas expiram sozinhas. Se o Redis cair, o catálogo lê direto do banco.
+
+**Admin** (`catalog.read` para consultar, `catalog.manage` para alterar; o Manager tem as duas):
+
+| Rota | |
+|---|---|
+| `GET/POST /api/v1/admin/products`, `GET/PUT/DELETE /api/v1/admin/products/{id}` | produtos, inclusive inativos; `DELETE` é remoção lógica |
+| `PATCH /api/v1/admin/products/{id}/status`, `PATCH /api/v1/admin/products/{id}/stock` | ativar/desativar e definir estoque |
+| `GET/POST /api/v1/admin/products/{id}/links`, `DELETE /api/v1/admin/products/{id}/links/{linkId}` | vínculos |
+| `GET/POST /api/v1/admin/categories`, `PUT/DELETE /api/v1/admin/categories/{id}` | categorias; só remove sem produtos |
+
+- SKU único, gravado em maiúsculas. Slug gerado do nome sem acentos, com sufixo `-2`, `-3`… se já existir.
+- Preço com no máximo duas casas; `compareAtPrice` (preço "de") precisa ser maior que o preço. O banco também tem `CHECK` de preço positivo e estoque não negativo.
+- `PUT` exige a `version` lida do produto (`xmin` do PostgreSQL): se alguém alterou antes, responde 409 `CONCURRENCY_CONFLICT` em vez de sobrescrever.
+- Em desenvolvimento, `Seed:DemoCatalog` cria 3 categorias, 13 produtos (um esgotado, um inativo) e vínculos de exemplo.
 
 ## Outbox e e-mail de boas-vindas
 
@@ -262,7 +300,7 @@ tests/
 | 3 | Banco, usuários e JWT com blacklist | concluída |
 | 4 | Permissões e auditoria administrativa | concluída |
 | 5 | Outbox e e-mail de boas-vindas | concluída |
-| 6 | Produtos e vínculos | pendente |
+| 6 | Produtos e vínculos | concluída |
 | 7 | Carrinho | pendente |
 | 8 | Checkout idempotente e pedidos | pendente |
 | 9 | Views de diagnóstico de vendas | pendente |
