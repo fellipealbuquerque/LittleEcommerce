@@ -30,7 +30,7 @@ public sealed class SmtpEmailSender(IOptions<EmailOptions> options, ILogger<Smtp
         await client.ConnectAsync(smtp.Host, smtp.Port, smtp.Security, ct);
 
         if (!string.IsNullOrEmpty(smtp.Username))
-            await client.AuthenticateAsync(smtp.Username, smtp.Password, ct);
+            await client.AuthenticateAsync(smtp.Username, smtp.Password ?? string.Empty, ct);
 
         await client.SendAsync(mime, ct);
         await client.DisconnectAsync(true, ct);
