@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using LittleEcommerce.Source.Common.Abstractions;
 
 namespace LittleEcommerce.Source.Data.Entities;
 
+[NotAudited]
 public class RefreshToken
 {
     [Key]

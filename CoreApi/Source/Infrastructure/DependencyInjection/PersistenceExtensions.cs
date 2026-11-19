@@ -3,6 +3,7 @@ using LittleEcommerce.Source.Data;
 using LittleEcommerce.Source.Data.Repositories.Implementations;
 using LittleEcommerce.Source.Data.Repositories.Interfaces;
 using LittleEcommerce.Source.Data.Seeders;
+using LittleEcommerce.Source.Infrastructure.Auditing;
 using LittleEcommerce.Source.Infrastructure.Data;
 using LittleEcommerce.Source.Shared.Options;
 using Microsoft.EntityFrameworkCore;
@@ -24,13 +25,17 @@ public static class PersistenceExtensions
 
         services.AddDbContext<ApplicationDbContext>((sp, options) => options
             .UseLittleEcommerceDatabase(sp.GetRequiredService<NpgsqlDataSource>())
-            .AddInterceptors(sp.GetRequiredService<TimestampsInterceptor>()));
+            .AddInterceptors(
+                sp.GetRequiredService<TimestampsInterceptor>(),
+                sp.GetRequiredService<AuditSaveChangesInterceptor>(),
+                sp.GetRequiredService<AuditTransactionInterceptor>()));
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
         return services;
