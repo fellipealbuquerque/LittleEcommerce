@@ -1,5 +1,6 @@
 using System.Globalization;
 using LittleEcommerce.Source.Common.Constants;
+using LittleEcommerce.Source.Infrastructure.Mongo;
 using MongoDB.Bson;
 using Serilog.Events;
 using Serilog.Formatting.Display;
@@ -84,7 +85,7 @@ public static class MongoLogDocumentFactory
 
         return value switch
         {
-            ScalarValue scalar => ToBson(scalar.Value),
+            ScalarValue scalar => BsonValues.From(scalar.Value),
             SequenceValue sequence => new BsonArray(sequence.Elements.Select(e => ToBson(e, depth + 1))),
             StructureValue structure => ToBson(structure, depth),
             DictionaryValue dictionary => ToBson(dictionary, depth),
@@ -114,27 +115,6 @@ public static class MongoLogDocumentFactory
 
         return document;
     }
-
-    private static BsonValue ToBson(object? value) => value switch
-    {
-        null => BsonNull.Value,
-        string s => new BsonString(s),
-        bool b => BsonBoolean.Create(b),
-        int i => new BsonInt32(i),
-        long l => new BsonInt64(l),
-        short or byte or sbyte or ushort => new BsonInt32(Convert.ToInt32(value, CultureInfo.InvariantCulture)),
-        uint ui => new BsonInt64(ui),
-        ulong ul when ul <= long.MaxValue => new BsonInt64((long)ul),
-        float f => new BsonDouble(f),
-        double d => new BsonDouble(d),
-        decimal m => new BsonDecimal128(m),
-        DateTime dt => new BsonDateTime(dt.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(dt, DateTimeKind.Utc) : dt.ToUniversalTime()),
-        DateTimeOffset dto => new BsonDateTime(dto.UtcDateTime),
-        Guid g => new BsonString(g.ToString()),
-        TimeSpan ts => new BsonString(ts.ToString("c", CultureInfo.InvariantCulture)),
-        Enum e => new BsonString(e.ToString()),
-        _ => new BsonString(Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty)
-    };
 
     private static BsonDocument ToBson(Exception exception, int depth)
     {

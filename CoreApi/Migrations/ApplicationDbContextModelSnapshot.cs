@@ -22,6 +22,96 @@ namespace LittleEcommerce.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Permission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Group")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("group");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_permissions");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ix_permissions_code");
+
+                    b.ToTable("permissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000001"),
+                            Code = "users.read",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Listar e consultar usuários",
+                            Group = "Usuários",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000002"),
+                            Code = "users.manage",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Trocar papel, bloquear, desbloquear e encerrar sessões de usuários",
+                            Group = "Usuários",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000003"),
+                            Code = "roles.read",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Listar papéis e permissões",
+                            Group = "Papéis",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000004"),
+                            Code = "roles.manage",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Criar, editar permissões e remover papéis",
+                            Group = "Papéis",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000005"),
+                            Code = "audit.read",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Consultar o log de auditoria",
+                            Group = "Auditoria",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -109,6 +199,10 @@ namespace LittleEcommerce.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("description");
 
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_system");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -134,6 +228,7 @@ namespace LittleEcommerce.Migrations
                             Id = new Guid("019a9c00-0000-7000-8000-000000000001"),
                             CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Acesso total à administração",
+                            IsSystem = true,
                             Name = "Admin",
                             UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -142,6 +237,7 @@ namespace LittleEcommerce.Migrations
                             Id = new Guid("019a9c00-0000-7000-8000-000000000002"),
                             CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Gestão de catálogo, pedidos e relatórios",
+                            IsSystem = true,
                             Name = "Manager",
                             UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
                         },
@@ -150,8 +246,35 @@ namespace LittleEcommerce.Migrations
                             Id = new Guid("019a9c00-0000-7000-8000-000000000003"),
                             CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             Description = "Cliente da loja",
+                            IsSystem = true,
                             Name = "Customer",
                             UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("permission_id");
+
+                    b.HasKey("RoleId", "PermissionId")
+                        .HasName("pk_role_permissions");
+
+                    b.HasIndex("PermissionId")
+                        .HasDatabaseName("ix_role_permissions_permission_id");
+
+                    b.ToTable("role_permissions", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            RoleId = new Guid("019a9c00-0000-7000-8000-000000000002"),
+                            PermissionId = new Guid("019a9c00-0000-7000-8001-000000000001")
                         });
                 });
 
@@ -242,6 +365,27 @@ namespace LittleEcommerce.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.RolePermission", b =>
+                {
+                    b.HasOne("LittleEcommerce.Source.Data.Entities.Permission", "Permission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_permissions_permission_id");
+
+                    b.HasOne("LittleEcommerce.Source.Data.Entities.Role", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_permissions_roles_role_id");
+
+                    b.Navigation("Permission");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.User", b =>
                 {
                     b.HasOne("LittleEcommerce.Source.Data.Entities.Role", "Role")
@@ -254,8 +398,15 @@ namespace LittleEcommerce.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Permission", b =>
+                {
+                    b.Navigation("RolePermissions");
+                });
+
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Role", b =>
                 {
+                    b.Navigation("RolePermissions");
+
                     b.Navigation("Users");
                 });
 

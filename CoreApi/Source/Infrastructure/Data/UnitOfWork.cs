@@ -44,6 +44,7 @@ public class UnitOfWork(ApplicationDbContext context) : IUnitOfWork
                 }
                 catch
                 {
+                    await transaction.RollbackAsync(CancellationToken.None);
                     context.ChangeTracker.Clear();
                     throw;
                 }
