@@ -13,6 +13,7 @@ builder.Services
     .AddPersistence(builder.Configuration)
     .AddAuth(builder.Configuration)
     .AddMessaging(builder.Configuration)
+    .AddCatalog(builder.Configuration)
     .AddHealth();
 
 var app = builder.Build();

@@ -31,5 +31,6 @@ public class ApiFactory(IntegrationFixture fixture) : WebApplicationFactory<Prog
         builder.UseSetting("Email:Smtp:Port", fixture.SmtpMappedPort.ToString());
         builder.UseSetting("Email:Smtp:Security", "None");
         builder.UseSetting("Outbox:DispatcherEnabled", "false");
+        builder.UseSetting("Seed:DemoCatalog", "false");
     }
 }

@@ -20,7 +20,59 @@ namespace LittleEcommerce.Migrations
                 .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("slug");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_categories");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_categories_slug")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("categories", (string)null);
+                });
 
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.OutboxMessage", b =>
                 {
@@ -208,6 +260,184 @@ namespace LittleEcommerce.Migrations
                             Description = "Reenviar mensagens do outbox",
                             Group = "Mensageria",
                             UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000008"),
+                            Code = "catalog.read",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Ver produtos e categorias, inclusive inativos",
+                            Group = "Catálogo",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        },
+                        new
+                        {
+                            Id = new Guid("019a9c00-0000-7000-8001-000000000009"),
+                            Code = "catalog.manage",
+                            CreatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Criar e editar produtos, categorias, estoque e vínculos",
+                            Group = "Catálogo",
+                            UpdatedAt = new DateTime(2026, 11, 19, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Product", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<decimal?>("CompareAtPrice")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("compare_at_price");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("image_url");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal>("Price")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("price");
+
+                    b.Property<string>("Sku")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("sku");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("character varying(220)")
+                        .HasColumnName("slug");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("integer")
+                        .HasColumnName("stock");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_products");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_products_category_id");
+
+                    b.HasIndex("Name")
+                        .HasDatabaseName("ix_products_name");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Name"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Name"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("Sku")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_sku")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_slug")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("IsActive", "CategoryId", "Price")
+                        .HasDatabaseName("ix_products_is_active_category_id_price");
+
+                    b.ToTable("products", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_products_compare_at_price", "compare_at_price IS NULL OR compare_at_price > price");
+
+                            t.HasCheckConstraint("ck_products_price_positive", "price > 0");
+
+                            t.HasCheckConstraint("ck_products_stock_not_negative", "stock >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.ProductLink", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("LinkedProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_product_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_product_links");
+
+                    b.HasIndex("LinkedProductId")
+                        .HasDatabaseName("ix_product_links_linked_product_id");
+
+                    b.HasIndex("ProductId", "LinkedProductId", "Type")
+                        .IsUnique()
+                        .HasDatabaseName("ix_product_links_product_id_linked_product_id_type");
+
+                    b.ToTable("product_links", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_product_links_not_self", "product_id <> linked_product_id");
+
+                            t.HasCheckConstraint("ck_product_links_quantity_positive", "quantity > 0");
                         });
                 });
 
@@ -374,6 +604,16 @@ namespace LittleEcommerce.Migrations
                         {
                             RoleId = new Guid("019a9c00-0000-7000-8000-000000000002"),
                             PermissionId = new Guid("019a9c00-0000-7000-8001-000000000001")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("019a9c00-0000-7000-8000-000000000002"),
+                            PermissionId = new Guid("019a9c00-0000-7000-8001-000000000008")
+                        },
+                        new
+                        {
+                            RoleId = new Guid("019a9c00-0000-7000-8000-000000000002"),
+                            PermissionId = new Guid("019a9c00-0000-7000-8001-000000000009")
                         });
                 });
 
@@ -452,6 +692,38 @@ namespace LittleEcommerce.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Product", b =>
+                {
+                    b.HasOne("LittleEcommerce.Source.Data.Entities.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_products_categories_category_id");
+
+                    b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.ProductLink", b =>
+                {
+                    b.HasOne("LittleEcommerce.Source.Data.Entities.Product", "LinkedProduct")
+                        .WithMany()
+                        .HasForeignKey("LinkedProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_links_products_linked_product_id");
+
+                    b.HasOne("LittleEcommerce.Source.Data.Entities.Product", "Product")
+                        .WithMany("Links")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_product_links_products_product_id");
+
+                    b.Navigation("LinkedProduct");
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.RefreshToken", b =>
                 {
                     b.HasOne("LittleEcommerce.Source.Data.Entities.User", "User")
@@ -497,9 +769,19 @@ namespace LittleEcommerce.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Category", b =>
+                {
+                    b.Navigation("Products");
+                });
+
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Permission", b =>
                 {
                     b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Product", b =>
+                {
+                    b.Navigation("Links");
                 });
 
             modelBuilder.Entity("LittleEcommerce.Source.Data.Entities.Role", b =>
