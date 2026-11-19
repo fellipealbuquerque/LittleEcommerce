@@ -9,9 +9,13 @@ builder.Services
     .AddDocumentation()
     .AddCorsPolicy(builder.Configuration)
     .AddDataStores(builder.Configuration)
+    .AddPersistence(builder.Configuration)
+    .AddAuth(builder.Configuration)
     .AddHealth();
 
 var app = builder.Build();
+
+await app.MigrateAndSeedAsync();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseRequestLogging();
@@ -19,6 +23,10 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStatusCodeEnvelope();
 app.UseCors(ApiExtensions.CorsPolicy);
 app.UseDocumentation();
+app.UseAuthentication();
+app.UseMiddleware<TokenRevocationMiddleware>();
+app.UseRateLimiter();
+app.UseAuthorization();
 app.MapControllers();
 app.MapHealth();
 

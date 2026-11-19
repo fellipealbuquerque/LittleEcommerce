@@ -1,9 +1,9 @@
 using LittleEcommerce.Source.Shared.DTOs;
 using LittleEcommerce.Source.Shared.Extensions;
+using LittleEcommerce.Source.Shared.Helpers;
 using LittleEcommerce.Source.Shared.Options;
 using LittleEcommerce.Source.Shared.Serialization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace LittleEcommerce.Source.Infrastructure.DependencyInjection;
 
@@ -22,7 +22,7 @@ public static class ApiExtensions
             .ConfigureApiBehaviorOptions(o =>
             {
                 o.InvalidModelStateResponseFactory = context =>
-                    APIResponse.ValidationError(ToErrors(context.ModelState), context.HttpContext.TraceIdentifier);
+                    APIResponse.ValidationError(ModelStateErrors.From(context.ModelState), context.HttpContext.TraceIdentifier);
             });
 
         services.ConfigureHttpJsonOptions(o => JsonDefaults.Apply(o.SerializerOptions));
@@ -57,13 +57,4 @@ public static class ApiExtensions
 
         return app;
     }
-
-    private static Dictionary<string, string[]> ToErrors(ModelStateDictionary modelState) =>
-        modelState
-            .Where(entry => entry.Value is { Errors.Count: > 0 })
-            .ToDictionary(
-                entry => entry.Key,
-                entry => entry.Value!.Errors
-                    .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage) ? "Valor inválido" : e.ErrorMessage)
-                    .ToArray());
 }
