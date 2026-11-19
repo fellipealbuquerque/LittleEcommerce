@@ -1,3 +1,4 @@
+using LittleEcommerce.Source.Infrastructure.Mongo;
 using LittleEcommerce.Source.Shared.Options;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -9,10 +10,7 @@ namespace LittleEcommerce.Source.Infrastructure.Logging;
 
 public sealed class MongoLogSink(IMongoDatabase database, MongoLoggingOptions options) : IBatchedLogEventSink
 {
-    public const string TtlIndexName = "ttl_timestamp";
-
-    private const int IndexOptionsConflict = 85;
-    private const int IndexKeySpecsConflict = 86;
+    public const string TtlIndexName = MongoIndexes.TtlIndexName;
 
     private readonly IMongoCollection<BsonDocument> _collection = database.GetCollection<BsonDocument>(options.Collection);
     private volatile bool _indexesReady;
@@ -32,7 +30,7 @@ public sealed class MongoLogSink(IMongoDatabase database, MongoLoggingOptions op
     {
         try
         {
-            await EnsureTtlIndexAsync();
+            await MongoIndexes.EnsureTtlAsync(database, _collection, "timestamp", options.RetentionDays);
 
             var keys = Builders<BsonDocument>.IndexKeys;
 
@@ -55,30 +53,6 @@ public sealed class MongoLogSink(IMongoDatabase database, MongoLoggingOptions op
         {
             SelfLog.WriteLine("MongoLogSink: índices não criados em {0}: {1}", options.Collection, ex.Message);
             _indexesReady = true;
-        }
-    }
-
-    private async Task EnsureTtlIndexAsync()
-    {
-        var expireAfter = TimeSpan.FromDays(Math.Max(1, options.RetentionDays));
-
-        try
-        {
-            await _collection.Indexes.CreateOneAsync(new CreateIndexModel<BsonDocument>(
-                Builders<BsonDocument>.IndexKeys.Ascending("timestamp"),
-                new CreateIndexOptions { Name = TtlIndexName, ExpireAfter = expireAfter }));
-        }
-        catch (MongoCommandException ex) when (ex.Code is IndexOptionsConflict or IndexKeySpecsConflict)
-        {
-            await database.RunCommandAsync<BsonDocument>(new BsonDocument
-            {
-                ["collMod"] = options.Collection,
-                ["index"] = new BsonDocument
-                {
-                    ["name"] = TtlIndexName,
-                    ["expireAfterSeconds"] = (long)expireAfter.TotalSeconds
-                }
-            });
         }
     }
 }

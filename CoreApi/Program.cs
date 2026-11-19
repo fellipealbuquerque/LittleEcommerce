@@ -9,6 +9,7 @@ builder.Services
     .AddDocumentation()
     .AddCorsPolicy(builder.Configuration)
     .AddDataStores(builder.Configuration)
+    .AddAuditing(builder.Configuration)
     .AddPersistence(builder.Configuration)
     .AddAuth(builder.Configuration)
     .AddHealth();

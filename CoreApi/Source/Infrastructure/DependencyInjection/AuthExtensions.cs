@@ -4,7 +4,9 @@ using LittleEcommerce.Source.Application.Interfaces.Services;
 using LittleEcommerce.Source.Application.Services;
 using LittleEcommerce.Source.Common.Constants;
 using LittleEcommerce.Source.Common.Errors;
+using LittleEcommerce.Source.Infrastructure.Authorization;
 using LittleEcommerce.Source.Infrastructure.Security;
+using Microsoft.AspNetCore.Authorization;
 using LittleEcommerce.Source.Infrastructure.Workers;
 using LittleEcommerce.Source.Shared.DTOs;
 using LittleEcommerce.Source.Shared.Extensions;
@@ -68,6 +70,11 @@ public static class AuthExtensions
         services.AddScoped<ITokenRevocationStore, RedisTokenRevocationStore>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+
+        services.AddScoped<IRolePermissionService, RolePermissionService>();
+        services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
 
         services.AddHostedService<RefreshTokenCleanupWorker>();
 

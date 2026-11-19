@@ -9,7 +9,7 @@ API de venda de produtos em .NET 10.
 | ASP.NET Core 10 | API REST em `api/v1` |
 | PostgreSQL 17 | banco principal, EF Core com migrations |
 | Redis 7 | blacklist de JWT, cache, trava de idempotência |
-| MongoDB 8 | logs da aplicação e auditoria |
+| MongoDB 8 | logs da aplicação (`logs`) e auditoria (`audit_logs`) |
 | Mailpit | caixa de e-mail local para desenvolvimento |
 
 ## Como rodar
@@ -91,6 +91,57 @@ No Swagger, faça login, clique em **Authorize** e cole o `accessToken`.
 | `INVALID_CREDENTIALS` | e-mail ou senha inválidos (mesma resposta para e-mail inexistente) |
 | `INVALID_REFRESH_TOKEN` / `REFRESH_TOKEN_EXPIRED` / `REFRESH_TOKEN_REUSED` | problemas no refresh |
 | `USER_BLOCKED` | usuário bloqueado |
+
+## Permissões
+
+Cada papel tem um conjunto de permissões (`permissions` e `role_permissions`). As rotas admin usam `[RequiresPermission("users.manage")]`, que vira um requisito da autorização do ASP.NET Core. As permissões de cada papel ficam em cache no Redis por 10 minutos e o cache é limpo quando elas mudam. Se o Redis cair, a consulta vai direto ao banco.
+
+| Permissão | Libera |
+|---|---|
+| `users.read` | listar e consultar usuários |
+| `users.manage` | trocar papel, bloquear, desbloquear e encerrar sessões |
+| `roles.read` | listar papéis e o catálogo de permissões |
+| `roles.manage` | criar papel, definir permissões e remover papel |
+| `audit.read` | consultar a auditoria |
+
+| Papel | Permissões |
+|---|---|
+| `Admin` | todas, sempre; não pode ser editado |
+| `Manager` | `users.read` (as próximas etapas acrescentam catálogo, pedidos e relatórios) |
+| `Customer` | nenhuma rota admin |
+
+Regras de proteção: papéis do sistema não podem ser removidos, papel com usuários não pode ser removido, ninguém troca o próprio papel nem se bloqueia, e o último administrador ativo não pode ser rebaixado nem bloqueado. Trocar papel ou bloquear derruba as sessões do usuário.
+
+| Rota | Permissão |
+|---|---|
+| `GET /api/v1/admin/users` (`search`, `role`, `status`, `limit`, `offset`) | `users.read` |
+| `GET /api/v1/admin/users/{id}` | `users.read` |
+| `PATCH /api/v1/admin/users/{id}/role` | `users.manage` |
+| `PATCH /api/v1/admin/users/{id}/block` e `/unblock` | `users.manage` |
+| `POST /api/v1/admin/users/{id}/revoke-sessions` | `users.manage` |
+| `GET /api/v1/admin/roles`, `GET /api/v1/admin/permissions` | `roles.read` |
+| `POST /api/v1/admin/roles`, `PUT /api/v1/admin/roles/{id}/permissions`, `DELETE /api/v1/admin/roles/{id}` | `roles.manage` |
+| `GET /api/v1/admin/audit-logs` | `audit.read` |
+
+No Swagger, a descrição de cada rota admin mostra a permissão necessária.
+
+## Auditoria
+
+Coleção `audit_logs` no MongoDB, gravada em background (fila em memória + inserção em lote com novas tentativas). Retenção por TTL em `AuditLogging:RetentionDays` (365 dias).
+
+| `kind` | O que registra |
+|---|---|
+| `entity-change` | toda alteração de dados feita pelo EF: `Created`, `Updated`, `Deleted` (inclusive soft delete), com `old` e `new` só dos campos que mudaram. Só é gravado depois do commit da transação; rollback descarta. |
+| `admin-action` | toda chamada a rota admin, inclusive leituras e falhas: ação (`AdminUsers.Block`), permissão exigida, argumentos, status, duração |
+| `access-denied` | toda resposta 403, com a permissão que faltou |
+
+Todo registro traz o autor (`actor`: tipo, id, e-mail, papel, IP, user agent) e o `correlationId` da requisição, o mesmo dos logs. Campos com nome de segredo (`passwordHash`, `token`…) são gravados como `***`. Entidades marcadas com `[NotAudited]` (refresh tokens) ficam de fora.
+
+```js
+db.audit_logs.find({ entityType: "User", entityId: "<id>" }).sort({ timestamp: -1 })
+db.audit_logs.find({ kind: "admin-action", "actor.userId": "<id>" })
+db.audit_logs.find({ kind: "access-denied" }).sort({ timestamp: -1 }).limit(20)
+```
 
 ## Documentação
 
@@ -182,7 +233,7 @@ tests/
 | 1 | Fundação: solução, Docker, envelope de resposta, exceções, health checks, CI | concluída |
 | 2 | Logs no MongoDB | concluída |
 | 3 | Banco, usuários e JWT com blacklist | concluída |
-| 4 | Permissões e auditoria administrativa | pendente |
+| 4 | Permissões e auditoria administrativa | concluída |
 | 5 | Outbox e e-mail de boas-vindas | pendente |
 | 6 | Produtos e vínculos | pendente |
 | 7 | Carrinho | pendente |
