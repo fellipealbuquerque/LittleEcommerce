@@ -11,6 +11,8 @@ public static class Permissions
     public const string AuditRead = "audit.read";
     public const string OutboxRead = "outbox.read";
     public const string OutboxManage = "outbox.manage";
+    public const string CatalogRead = "catalog.read";
+    public const string CatalogManage = "catalog.manage";
 
     public static readonly IReadOnlyList<PermissionDefinition> Catalog =
     [
@@ -20,12 +22,14 @@ public static class Permissions
         new(Guid.Parse("019a9c00-0000-7000-8001-000000000004"), RolesManage, "Papéis", "Criar, editar permissões e remover papéis"),
         new(Guid.Parse("019a9c00-0000-7000-8001-000000000005"), AuditRead, "Auditoria", "Consultar o log de auditoria"),
         new(Guid.Parse("019a9c00-0000-7000-8001-000000000006"), OutboxRead, "Mensageria", "Consultar mensagens do outbox (e-mails e eventos)"),
-        new(Guid.Parse("019a9c00-0000-7000-8001-000000000007"), OutboxManage, "Mensageria", "Reenviar mensagens do outbox")
+        new(Guid.Parse("019a9c00-0000-7000-8001-000000000007"), OutboxManage, "Mensageria", "Reenviar mensagens do outbox"),
+        new(Guid.Parse("019a9c00-0000-7000-8001-000000000008"), CatalogRead, "Catálogo", "Ver produtos e categorias, inclusive inativos"),
+        new(Guid.Parse("019a9c00-0000-7000-8001-000000000009"), CatalogManage, "Catálogo", "Criar e editar produtos, categorias, estoque e vínculos")
     ];
 
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> DefaultsByRole = new Dictionary<string, IReadOnlyList<string>>
     {
-        [Roles.Manager] = [UsersRead]
+        [Roles.Manager] = [UsersRead, CatalogRead, CatalogManage]
     };
 
     public static PermissionDefinition Get(string code) => Catalog.Single(p => p.Code == code);
