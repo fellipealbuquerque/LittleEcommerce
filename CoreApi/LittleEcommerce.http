@@ -1,4 +1,6 @@
 @host = http://localhost:5080
+@email = cliente-http@tests.local
+@password = Senha12345
 
 ### Liveness
 GET {{host}}/health/live
@@ -12,3 +14,33 @@ GET {{host}}/api/v1/system/version
 ### Versão com correlation id (procure no Mongo: db.logs.find({ correlationId: "teste-manual-1" }))
 GET {{host}}/api/v1/system/version
 X-Correlation-Id: teste-manual-1
+
+### Cadastro
+POST {{host}}/api/v1/auth/register
+Content-Type: application/json
+
+{ "name": "Cliente HTTP", "email": "{{email}}", "password": "{{password}}" }
+
+### Login
+# @name login
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Meu perfil
+GET {{host}}/api/v1/users/me
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+
+### Renovar tokens
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{login.response.body.$.data.refreshToken}}" }
+
+### Sair
+POST {{host}}/api/v1/auth/logout
+Authorization: Bearer {{login.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{ "refreshToken": "{{login.response.body.$.data.refreshToken}}" }
