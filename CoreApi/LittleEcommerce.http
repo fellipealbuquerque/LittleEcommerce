@@ -91,3 +91,26 @@ Authorization: Bearer {{admin.response.body.$.data.accessToken}}
 ### Outbox: reenviar tudo que está em dead-letter (outbox.manage)
 POST {{host}}/api/v1/admin/outbox/retry-dead-letters
 Authorization: Bearer {{admin.response.body.$.data.accessToken}}
+
+### ---------- Catálogo ----------
+### Categorias
+GET {{host}}/api/v1/categories
+
+### Produtos: busca, faixa de preço, em estoque, mais baratos primeiro
+GET {{host}}/api/v1/products?search=fone&minPrice=100&maxPrice=1000&inStock=true&sort=PriceAsc&limit=10
+
+### Produtos de uma categoria (slug)
+GET {{host}}/api/v1/products?category=acessorios
+
+### Detalhe por slug
+GET {{host}}/api/v1/products/notebook-ultra-14
+
+### Componentes do kit
+GET {{host}}/api/v1/products/kit-home-office/links?type=Kit
+
+### Criar produto (catalog.manage)
+POST {{host}}/api/v1/admin/products
+Authorization: Bearer {{admin.response.body.$.data.accessToken}}
+Content-Type: application/json
+
+{ "sku": "webcam-fhd", "name": "Webcam Full HD", "price": 299.90, "compareAtPrice": 349.90, "stock": 12 }

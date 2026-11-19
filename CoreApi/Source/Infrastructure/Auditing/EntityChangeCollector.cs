@@ -15,7 +15,7 @@ public static class EntityChangeCollector
     public const string Updated = "Updated";
     public const string Deleted = "Deleted";
 
-    private static readonly HashSet<string> IgnoredProperties = [nameof(BaseEntity.CreatedAt), nameof(BaseEntity.UpdatedAt)];
+    private static readonly HashSet<string> IgnoredProperties = [nameof(BaseEntity.CreatedAt), nameof(BaseEntity.UpdatedAt), nameof(Product.Version)];
 
     public static List<AuditEntry> Collect(DbContext context, AuditActor actor, string? correlationId, DateTime now)
     {
