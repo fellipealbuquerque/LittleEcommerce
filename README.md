@@ -38,7 +38,7 @@ docker compose up -d postgres redis mongo mailpit
 dotnet run --project CoreApi
 ```
 
-Testes (os de integração sobem PostgreSQL, Redis e MongoDB com Testcontainers, então o Docker precisa estar rodando):
+Testes (os de integração sobem PostgreSQL, Redis, MongoDB e Mailpit com Testcontainers, então o Docker precisa estar rodando):
 
 ```bash
 dotnet test LittleEcommerce.slnx
@@ -103,6 +103,8 @@ Cada papel tem um conjunto de permissões (`permissions` e `role_permissions`). 
 | `roles.read` | listar papéis e o catálogo de permissões |
 | `roles.manage` | criar papel, definir permissões e remover papel |
 | `audit.read` | consultar a auditoria |
+| `outbox.read` | consultar mensagens do outbox |
+| `outbox.manage` | reenviar mensagens e o e-mail de boas-vindas |
 
 | Papel | Permissões |
 |---|---|
@@ -124,6 +126,31 @@ Regras de proteção: papéis do sistema não podem ser removidos, papel com usu
 | `GET /api/v1/admin/audit-logs` | `audit.read` |
 
 No Swagger, a descrição de cada rota admin mostra a permissão necessária.
+
+## Outbox e e-mail de boas-vindas
+
+O cadastro grava o usuário e a mensagem `email.welcome` na tabela `outbox_messages` **na mesma transação**: ou os dois existem, ou nenhum. Depois do commit o dispatcher é acordado na hora e envia o e-mail (SMTP com MailKit; em desenvolvimento cai no Mailpit, http://localhost:8025). O cadastro nunca espera o SMTP: se o servidor de e-mail estiver fora, a conta é criada do mesmo jeito e o envio fica para as novas tentativas.
+
+| Status | Quando |
+|---|---|
+| `Pending` | na fila; `next_attempt_at` diz quando pode ser enviada |
+| `Processing` | reservada por um dispatcher (`locked_until`); se o processo cair, a reserva expira e outro pega |
+| `Sent` | entregue |
+| `DeadLetter` | esgotou as tentativas (`Outbox:MaxAttempts`, 5) ou não tem handler |
+
+- **Envio imediato**: sinal em memória acorda o `OutboxDispatcherWorker` assim que a transação confirma; sem sinal, ele varre a tabela a cada `Outbox:PollIntervalSeconds`.
+- **Reenvio automático**: falhas voltam para `Pending` com espera exponencial (`BaseRetryDelaySeconds` 30 s, dobrando até `MaxRetryDelayMinutes` 60), e o erro fica em `last_error`.
+- **Reenvio manual**: `POST /api/v1/admin/outbox/{id}/retry` (qualquer status, menos `Processing`), `POST /api/v1/admin/outbox/retry-dead-letters` e `POST /api/v1/admin/users/{id}/resend-welcome-email` (gera um e-mail novo).
+- Várias instâncias da API podem rodar o dispatcher juntas: a reserva usa `FOR UPDATE SKIP LOCKED`.
+- A entrega é *at-least-once*: se o processo cair entre o envio e a gravação do status, o e-mail pode sair duas vezes. Cada e-mail leva o id da mensagem no `Message-Id`.
+- Os logs do envio carregam o `correlationId` da requisição que criou a mensagem.
+
+| Rota | Permissão |
+|---|---|
+| `GET /api/v1/admin/outbox` (`status`, `type`, `aggregateId`), `GET /api/v1/admin/outbox/{id}`, `GET /api/v1/admin/outbox/summary` | `outbox.read` |
+| `POST /api/v1/admin/outbox/{id}/retry`, `POST /api/v1/admin/outbox/retry-dead-letters`, `POST /api/v1/admin/users/{id}/resend-welcome-email` | `outbox.manage` |
+
+Configuração em `Email` (`FromAddress`, `FromName`, `StoreUrl`, `Smtp:Host`, `Port`, `Security`, `Username`, `Password`) e `Outbox`. `Email:FromAddress` e `Email:Smtp:Host` são obrigatórios.
 
 ## Auditoria
 
@@ -234,7 +261,7 @@ tests/
 | 2 | Logs no MongoDB | concluída |
 | 3 | Banco, usuários e JWT com blacklist | concluída |
 | 4 | Permissões e auditoria administrativa | concluída |
-| 5 | Outbox e e-mail de boas-vindas | pendente |
+| 5 | Outbox e e-mail de boas-vindas | concluída |
 | 6 | Produtos e vínculos | pendente |
 | 7 | Carrinho | pendente |
 | 8 | Checkout idempotente e pedidos | pendente |
