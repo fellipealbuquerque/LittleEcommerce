@@ -13,7 +13,8 @@ public static class DocumentationExtensions
 
     private const string Description =
         "API de venda de produtos. Sucesso responde `{ status, message, data }` e erro responde " +
-        "`{ status, code, title, message, traceId, errors }`.";
+        "`{ status, code, title, message, traceId, errors }`. Envie `X-Correlation-Id` para rastrear a requisição " +
+        "nos logs; sem ele a API gera um e devolve no mesmo header. O `traceId` do erro é esse mesmo valor.";
 
     public static IServiceCollection AddDocumentation(this IServiceCollection services)
     {

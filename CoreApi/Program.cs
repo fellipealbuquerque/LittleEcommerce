@@ -4,6 +4,7 @@ using LittleEcommerce.Source.Middlewares;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
+    .AddStructuredLogging(builder.Configuration)
     .AddApi()
     .AddDocumentation()
     .AddCorsPolicy(builder.Configuration)
@@ -12,6 +13,8 @@ builder.Services
 
 var app = builder.Build();
 
+app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseRequestLogging();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseStatusCodeEnvelope();
 app.UseCors(ApiExtensions.CorsPolicy);
