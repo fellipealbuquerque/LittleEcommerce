@@ -1,14 +1,16 @@
 using System.Net;
 using System.Text.Json;
+using LittleEcommerce.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace LittleEcommerce.IntegrationTests.Foundation;
 
-public class FoundationEndpointsTests(ApiFactory factory)
-    : IClassFixture<ApiFactory>
+[Collection(IntegrationCollection.Name)]
+public class FoundationEndpointsTests(IntegrationFixture fixture)
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly ApiFactory _factory = fixture.Factory;
+    private readonly HttpClient _client = fixture.Factory.CreateClient();
 
     private static async Task<JsonElement> ReadJsonAsync(HttpResponseMessage response)
     {
@@ -76,7 +78,7 @@ public class FoundationEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task Root_ShouldRedirectToSwagger()
     {
-        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
         var response = await client.GetAsync("/");
 
@@ -87,11 +89,7 @@ public class FoundationEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task Documentation_ShouldBeHiddenInProduction()
     {
-        using var production = factory.WithWebHostBuilder(b => b
-            .UseEnvironment("Production")
-            .UseSetting("ConnectionStrings:PostgreSQL", "Host=localhost")
-            .UseSetting("ConnectionStrings:Redis", "localhost:6379")
-            .UseSetting("ConnectionStrings:Mongo", "mongodb://localhost:27017"));
+        using var production = _factory.WithWebHostBuilder(b => b.UseEnvironment("Production"));
         using var client = production.CreateClient();
 
         var swagger = await client.GetAsync("/swagger/index.html");
@@ -99,5 +97,29 @@ public class FoundationEndpointsTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.NotFound, swagger.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, document.StatusCode);
+    }
+
+    [Fact]
+    public async Task OpenApiDocument_ShouldRequireBearerOnlyOnProtectedRoutes()
+    {
+        var body = await ReadJsonAsync(await _client.GetAsync("/openapi/v1.json"));
+
+        var scheme = body.GetProperty("components").GetProperty("securitySchemes").GetProperty("Bearer");
+        Assert.Equal("bearer", scheme.GetProperty("scheme").GetString());
+
+        var paths = body.GetProperty("paths");
+        Assert.True(paths.GetProperty("/api/v1/users/me").GetProperty("get").TryGetProperty("security", out _));
+        Assert.False(paths.GetProperty("/api/v1/auth/login").GetProperty("post").TryGetProperty("security", out _));
+    }
+
+    [Fact]
+    public async Task HealthReady_ShouldBeHealthyWithAllDependencies()
+    {
+        var response = await _client.GetAsync("/health/ready");
+
+        var body = await ReadJsonAsync(response);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", body.GetProperty("status").GetString());
+        Assert.Equal(3, body.GetProperty("checks").GetArrayLength());
     }
 }
