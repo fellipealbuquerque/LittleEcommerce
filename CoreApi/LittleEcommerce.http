@@ -79,3 +79,15 @@ Content-Type: application/json
 ### Auditoria (audit.read)
 GET {{host}}/api/v1/admin/audit-logs?kind=admin-action&limit=20
 Authorization: Bearer {{admin.response.body.$.data.accessToken}}
+
+### Outbox: resumo por status (outbox.read)
+GET {{host}}/api/v1/admin/outbox/summary
+Authorization: Bearer {{admin.response.body.$.data.accessToken}}
+
+### Outbox: mensagens em dead-letter (outbox.read)
+GET {{host}}/api/v1/admin/outbox?status=DeadLetter
+Authorization: Bearer {{admin.response.body.$.data.accessToken}}
+
+### Outbox: reenviar tudo que está em dead-letter (outbox.manage)
+POST {{host}}/api/v1/admin/outbox/retry-dead-letters
+Authorization: Bearer {{admin.response.body.$.data.accessToken}}

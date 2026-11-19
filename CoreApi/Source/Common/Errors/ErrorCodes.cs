@@ -22,4 +22,5 @@ public static class ErrorCodes
     public const string SystemRoleLocked = "SYSTEM_ROLE_LOCKED";
     public const string CannotChangeOwnAccount = "CANNOT_CHANGE_OWN_ACCOUNT";
     public const string LastAdmin = "LAST_ADMIN";
+    public const string OutboxMessageProcessing = "OUTBOX_MESSAGE_PROCESSING";
 }

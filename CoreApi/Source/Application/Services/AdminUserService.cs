@@ -1,5 +1,7 @@
+using LittleEcommerce.Source.Application.Abstractions;
 using LittleEcommerce.Source.Application.Exceptions;
 using LittleEcommerce.Source.Application.Interfaces;
+using LittleEcommerce.Source.Application.Interfaces.Messaging;
 using LittleEcommerce.Source.Application.Interfaces.Security;
 using LittleEcommerce.Source.Application.Interfaces.Services;
 using LittleEcommerce.Source.Application.Mappers;
@@ -20,6 +22,8 @@ public class AdminUserService(
     IRoleRepository roles,
     IRefreshTokenRepository refreshTokens,
     ITokenRevocationStore revocation,
+    IOutbox outbox,
+    IOutboxSignal outboxSignal,
     TimeProvider clock,
     ILogger<AdminUserService> logger) : IAdminUserService
 {
@@ -115,6 +119,24 @@ public class AdminUserService(
 
         await revocation.PublishSessionVersionAsync(user.Id, user.SessionVersion);
         logger.LogInformation("Sessões do usuário {UserId} encerradas pela administração", user.Id);
+    }
+
+    public async Task<Guid> ResendWelcomeEmailAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await FindAsync(userId, ct);
+
+        var messageId = outbox.Enqueue(
+            OutboxMessageTypes.WelcomeEmail,
+            new WelcomeEmailPayload(user.Id, user.Email, user.Name),
+            OutboxAggregates.User,
+            user.Id.ToString());
+
+        await unitOfWork.SaveChangesAsync(ct);
+        outboxSignal.Notify();
+
+        logger.LogInformation("E-mail de boas-vindas do usuário {UserId} colocado na fila de novo ({MessageId})", user.Id, messageId);
+
+        return messageId;
     }
 
     private async Task<User> FindAsync(Guid userId, CancellationToken ct) =>
