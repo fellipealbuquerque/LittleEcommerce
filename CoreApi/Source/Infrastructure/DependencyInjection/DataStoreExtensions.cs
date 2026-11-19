@@ -31,7 +31,13 @@ public static class DataStoreExtensions
             return ConnectionMultiplexer.Connect(options);
         });
 
-        services.AddSingleton<IMongoClient>(_ => new MongoClient(mongo));
+        services.AddSingleton<IMongoClient>(_ =>
+        {
+            var settings = MongoClientSettings.FromConnectionString(mongo);
+            settings.ServerSelectionTimeout = TimeSpan.FromSeconds(5);
+            settings.ConnectTimeout = TimeSpan.FromSeconds(5);
+            return new MongoClient(settings);
+        });
 
         services.AddSingleton(sp =>
         {

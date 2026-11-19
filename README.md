@@ -50,6 +50,28 @@ O documento OpenAPI é gerado pelo próprio ASP.NET Core (`Microsoft.AspNetCore.
 
 Fica ligada em Development e Staging (`Documentation:Enabled`) e desligada em produção.
 
+## Logs
+
+Serilog escreve no console e na coleção `logs` do MongoDB, em lotes e em background: se o Mongo cair, as requisições seguem funcionando e os logs ficam na fila (`MongoLogging:QueueLimit`).
+
+- Toda requisição gera um log com método, rota, status, duração, query string, IP, user agent e endpoint. 5xx vira `Error`, 4xx vira `Warning`.
+- Health checks e documentação (`/health`, `/swagger`, `/scalar`, `/openapi`) ficam em `Debug` e não são gravados por padrão.
+- `X-Correlation-Id`: enviado pelo cliente ou gerado pela API, volta no header da resposta, vai em todo log da requisição e é o `traceId` dos erros.
+- Campos com nome de segredo (`password`, `senha`, `token`, `secret`, `authorization`, `cookie`, `apikey`, cartão, `cvv`) viram `***`, inclusive dentro de objetos e na query string.
+- Retenção por índice TTL: `MongoLogging:RetentionDays` (30 dias). Mudar o valor atualiza o índice na próxima gravação.
+
+Consultando:
+
+```bash
+docker compose exec mongo mongosh little_ecommerce
+```
+
+```js
+db.logs.find({ correlationId: "abc-123" })
+db.logs.find({ level: "Error" }).sort({ timestamp: -1 }).limit(20)
+db.logs.find({ statusCode: { $gte: 400 } }, { message: 1, correlationId: 1 })
+```
+
 ## Health checks
 
 | Rota | O que verifica |
@@ -110,7 +132,7 @@ tests/
 | # | Etapa | Status |
 |---|---|---|
 | 1 | Fundação: solução, Docker, envelope de resposta, exceções, health checks, CI | concluída |
-| 2 | Logs no MongoDB | pendente |
+| 2 | Logs no MongoDB | concluída |
 | 3 | Banco, usuários e JWT com blacklist | pendente |
 | 4 | Permissões e auditoria administrativa | pendente |
 | 5 | Outbox e e-mail de boas-vindas | pendente |
