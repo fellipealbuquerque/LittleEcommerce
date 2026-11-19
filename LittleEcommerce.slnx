@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/CoreApi/">
+    <Project Path="CoreApi/LittleEcommerce.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/LittleEcommerce.UnitTests/LittleEcommerce.UnitTests.csproj" />
+    <Project Path="tests/LittleEcommerce.IntegrationTests/LittleEcommerce.IntegrationTests.csproj" />
+  </Folder>
+</Solution>
