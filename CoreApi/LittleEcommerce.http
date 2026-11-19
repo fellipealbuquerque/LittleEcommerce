@@ -1,0 +1,10 @@
+@host = http://localhost:5080
+
+### Liveness
+GET {{host}}/health/live
+
+### Readiness (postgres, redis, mongo)
+GET {{host}}/health/ready
+
+### Versão
+GET {{host}}/api/v1/system/version
