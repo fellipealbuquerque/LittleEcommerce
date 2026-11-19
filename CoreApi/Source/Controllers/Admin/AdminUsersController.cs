@@ -3,6 +3,7 @@ using LittleEcommerce.Source.Common.Constants;
 using LittleEcommerce.Source.Infrastructure.Authorization;
 using LittleEcommerce.Source.Shared.DTOs;
 using LittleEcommerce.Source.Shared.DTOs.Requests.Admin;
+using LittleEcommerce.Source.Shared.DTOs.Results.Admin;
 using LittleEcommerce.Source.Shared.DTOs.Results.Users;
 using LittleEcommerce.Source.Shared.Extensions;
 using LittleEcommerce.Source.Shared.Filters;
@@ -58,6 +59,18 @@ public class AdminUsersController(IAdminUserService service) : AdminControllerBa
     [ProducesResponseType<APISuccessResponse<UserResult>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> Unblock(Guid id, CancellationToken ct) =>
         APIResponse.Success(await service.UnblockAsync(id, ct), "Usuário desbloqueado");
+
+    [HttpPost("{id:guid}/resend-welcome-email")]
+    [RequiresPermission(Permissions.OutboxManage)]
+    [EndpointSummary("Reenviar e-mail de boas-vindas")]
+    [EndpointDescription("Coloca um novo e-mail de boas-vindas no outbox para o usuário e acorda o dispatcher.")]
+    [ProducesResponseType<APISuccessResponse<OutboxEnqueuedResult>>(StatusCodes.Status202Accepted)]
+    [ProducesResponseType<APIErrorResponse>(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResendWelcomeEmail(Guid id, CancellationToken ct) =>
+        APIResponse.Success(
+            new OutboxEnqueuedResult(await service.ResendWelcomeEmailAsync(id, ct)),
+            "E-mail de boas-vindas na fila",
+            StatusCodes.Status202Accepted);
 
     [HttpPost("{id:guid}/revoke-sessions")]
     [RequiresPermission(Permissions.UsersManage)]

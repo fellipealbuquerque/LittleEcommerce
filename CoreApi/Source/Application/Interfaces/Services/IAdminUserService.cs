@@ -17,4 +17,6 @@ public interface IAdminUserService
     Task<UserResult> UnblockAsync(Guid userId, CancellationToken ct = default);
 
     Task RevokeSessionsAsync(Guid userId, CancellationToken ct = default);
+
+    Task<Guid> ResendWelcomeEmailAsync(Guid userId, CancellationToken ct = default);
 }
