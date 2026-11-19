@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace LittleEcommerce.IntegrationTests.Foundation;
 
-public class FoundationEndpointsTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class FoundationEndpointsTests(ApiFactory factory)
+    : IClassFixture<ApiFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
 
