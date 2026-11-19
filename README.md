@@ -22,8 +22,9 @@ docker compose up -d --build
 
 | Serviço | Endereço |
 |---|---|
-| API | http://localhost:5080 |
-| Documentação (Scalar) | http://localhost:5080/scalar |
+| API | http://localhost:5080 (redireciona para o Swagger) |
+| Swagger UI | http://localhost:5080/swagger |
+| Scalar | http://localhost:5080/scalar |
 | OpenAPI | http://localhost:5080/openapi/v1.json |
 | Mailpit | http://localhost:8025 |
 
@@ -42,6 +43,12 @@ Testes:
 ```bash
 dotnet test LittleEcommerce.slnx
 ```
+
+## Documentação
+
+O documento OpenAPI é gerado pelo próprio ASP.NET Core (`Microsoft.AspNetCore.OpenApi`) a partir dos controllers e atributos (`[EndpointSummary]`, `[ProducesResponseType]`, `[Tags]`). Swagger UI e Scalar leem o mesmo documento.
+
+Fica ligada em Development e Staging (`Documentation:Enabled`) e desligada em produção.
 
 ## Health checks
 

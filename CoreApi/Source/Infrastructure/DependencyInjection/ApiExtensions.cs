@@ -4,7 +4,6 @@ using LittleEcommerce.Source.Shared.Options;
 using LittleEcommerce.Source.Shared.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Scalar.AspNetCore;
 
 namespace LittleEcommerce.Source.Infrastructure.DependencyInjection;
 
@@ -17,7 +16,8 @@ public static class ApiExtensions
         services.AddRouting(o => o.LowercaseUrls = true);
 
         services
-            .AddControllers()
+            .AddControllers(o =>
+                o.Filters.Add(new ProducesResponseTypeAttribute<APIErrorResponse>(StatusCodes.Status500InternalServerError)))
             .AddJsonOptions(o => JsonDefaults.Apply(o.JsonSerializerOptions))
             .ConfigureApiBehaviorOptions(o =>
             {
@@ -27,12 +27,6 @@ public static class ApiExtensions
 
         services.ConfigureHttpJsonOptions(o => JsonDefaults.Apply(o.SerializerOptions));
 
-        return services;
-    }
-
-    public static IServiceCollection AddDocumentation(this IServiceCollection services)
-    {
-        services.AddOpenApi();
         return services;
     }
 
@@ -60,17 +54,6 @@ public static class ApiExtensions
             var http = context.HttpContext;
             await http.Response.WriteErrorAsync(APIErrors.Create(http.Response.StatusCode, traceId: http.TraceIdentifier));
         });
-
-        return app;
-    }
-
-    public static WebApplication UseDocumentation(this WebApplication app)
-    {
-        if (!app.Environment.IsDevelopment())
-            return app;
-
-        app.MapOpenApi();
-        app.MapScalarApiReference(o => o.Title = "LittleEcommerce API");
 
         return app;
     }
