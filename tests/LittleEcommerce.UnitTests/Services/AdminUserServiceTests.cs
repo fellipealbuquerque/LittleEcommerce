@@ -1,4 +1,6 @@
+using LittleEcommerce.Source.Application.Abstractions;
 using LittleEcommerce.Source.Application.Exceptions;
+using LittleEcommerce.Source.Application.Interfaces.Messaging;
 using LittleEcommerce.Source.Application.Interfaces.Security;
 using LittleEcommerce.Source.Application.Services;
 using LittleEcommerce.Source.Common.Constants;
@@ -25,6 +27,8 @@ public class AdminUserServiceTests
     private readonly Mock<IRoleRepository> _roles = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokens = new();
     private readonly Mock<ITokenRevocationStore> _revocation = new();
+    private readonly Mock<IOutbox> _outbox = new();
+    private readonly Mock<IOutboxSignal> _signal = new();
     private readonly Guid _actorId = Guid.NewGuid();
 
     private AdminUserService CreateService() => new(
@@ -33,6 +37,8 @@ public class AdminUserServiceTests
         _roles.Object,
         _refreshTokens.Object,
         _revocation.Object,
+        _outbox.Object,
+        _signal.Object,
         new FakeTimeProvider(Now),
         NullLogger<AdminUserService>.Instance);
 
@@ -141,5 +147,20 @@ public class AdminUserServiceTests
 
         Assert.Equal(2, user.SessionVersion);
         _refreshTokens.Verify(r => r.RevokeAllForUserAsync(user.Id, Now.UtcDateTime, RevocationReasons.AdminRevoked, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResendWelcomeEmailAsync_ShouldQueueNewMessageAndWakeDispatcher()
+    {
+        var user = Existing();
+        var messageId = Guid.NewGuid();
+        _outbox.Setup(o => o.Enqueue(OutboxMessageTypes.WelcomeEmail, It.IsAny<WelcomeEmailPayload>(), OutboxAggregates.User, user.Id.ToString()))
+            .Returns(messageId);
+
+        var result = await CreateService().ResendWelcomeEmailAsync(user.Id);
+
+        Assert.Equal(messageId, result);
+        Assert.Equal(1, _unitOfWork.Commits);
+        _signal.Verify(s => s.Notify(), Times.Once);
     }
 }

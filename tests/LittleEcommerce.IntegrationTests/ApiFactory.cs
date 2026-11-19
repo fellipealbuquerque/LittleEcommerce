@@ -26,5 +26,10 @@ public class ApiFactory(IntegrationFixture fixture) : WebApplicationFactory<Prog
         builder.UseSetting("Seed:AdminPassword", AdminPassword);
         builder.UseSetting("PasswordHashing:WorkFactor", "4");
         builder.UseSetting("RateLimiting:AuthPermitLimit", "100000");
+        builder.UseSetting("Email:FromAddress", "nao-responda@tests.local");
+        builder.UseSetting("Email:Smtp:Host", fixture.SmtpHost);
+        builder.UseSetting("Email:Smtp:Port", fixture.SmtpMappedPort.ToString());
+        builder.UseSetting("Email:Smtp:Security", "None");
+        builder.UseSetting("Outbox:DispatcherEnabled", "false");
     }
 }
