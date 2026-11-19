@@ -13,6 +13,8 @@ services:
       ConnectionStrings__Redis: redis:6379,abortConnect=false
       ConnectionStrings__Mongo: mongodb://mongo:27017
       Mongo__Database: little_ecommerce
+      Email__Smtp__Host: mailpit
+      Email__Smtp__Port: 1025
     depends_on:
       postgres:
         condition: service_healthy

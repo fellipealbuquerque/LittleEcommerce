@@ -1,5 +1,6 @@
 using LittleEcommerce.Source.Application.Abstractions;
 using LittleEcommerce.Source.Application.Exceptions;
+using LittleEcommerce.Source.Application.Interfaces.Messaging;
 using LittleEcommerce.Source.Application.Interfaces.Security;
 using LittleEcommerce.Source.Application.Services;
 using LittleEcommerce.Source.Common.Constants;
@@ -27,6 +28,8 @@ public class AuthServiceTests
     private readonly Mock<IPasswordHasher> _hasher = new();
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<ITokenRevocationStore> _revocation = new();
+    private readonly Mock<IOutbox> _outbox = new();
+    private readonly Mock<IOutboxSignal> _signal = new();
     private readonly FakeTimeProvider _clock = new(Now);
 
     public AuthServiceTests()
@@ -47,6 +50,8 @@ public class AuthServiceTests
         _hasher.Object,
         _tokens.Object,
         _revocation.Object,
+        _outbox.Object,
+        _signal.Object,
         _clock,
         NullLogger<AuthService>.Instance);
 
@@ -72,6 +77,7 @@ public class AuthServiceTests
 
         Assert.Equal(ErrorCodes.EmailAlreadyRegistered, ex.Code);
         _users.Verify(u => u.Add(It.IsAny<User>()), Times.Never);
+        _signal.Verify(s => s.Notify(), Times.Never);
     }
 
     [Fact]
@@ -99,6 +105,12 @@ public class AuthServiceTests
         Assert.Equal("refresh-token", result.RefreshToken);
         Assert.Equal(Roles.Customer, result.User.Role);
         Assert.Equal(1, _unitOfWork.Commits);
+        _outbox.Verify(o => o.Enqueue(
+            OutboxMessageTypes.WelcomeEmail,
+            It.Is<WelcomeEmailPayload>(p => p.UserId == created.Id && p.Email == "Ana@Loja.com" && p.Name == "Ana"),
+            OutboxAggregates.User,
+            created.Id.ToString()), Times.Once);
+        _signal.Verify(s => s.Notify(), Times.Once);
     }
 
     [Fact]
